@@ -1,10 +1,8 @@
-xfs-interface
 run.sh
 disk.xfs
 *.dat
 *~
 *.o
-*.xsm
 *.txt
 *.tmp
 *.dSYM
@@ -12,6 +10,4 @@ disk.xfs
 .DS_Store
 temp*
 test
-inodetable.txt
-rootfile.txt
 tags
