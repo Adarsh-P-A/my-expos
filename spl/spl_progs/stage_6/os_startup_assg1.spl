@@ -13,7 +13,7 @@ loadi(3, 16);
 
 // Set up page table for INIT process
 PTBR = PAGE_TABLE_BASE;
-PTLR = 9; // Total logical pages used (0-2)
+PTLR = 9; // Total logical pages used (0-8)
 
 
 // page table

@@ -1,0 +1,20 @@
+// backup SP in process table as user stack pointer
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+
+// make SP point to kernel stack
+// "-1" because the stack is currently empty.
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+
+// backup will push BP, R0 - R19 into kernel stack
+backup;
+
+print "TIMER";
+
+// restore will pop R19 - R0, BP from kernel stack
+restore;
+
+// restore user stack pointer to SP
+SP = [PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13];
+
+// return to user mode
+ireturn;
