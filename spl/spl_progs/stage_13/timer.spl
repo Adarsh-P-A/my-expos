@@ -1,0 +1,47 @@
+breakpoint;
+
+// Save SP in process table, make SP point to kernel stack, backup to kernel stack
+    [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13] = SP;
+    SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]*512 - 1;
+    backup;
+
+    alias currentPID R0;
+    currentPID = [SYSTEM_STATUS_TABLE + 1];
+
+    alias process_table_entry R1;
+    process_table_entry = PROCESS_TABLE + currentPID*16;
+
+// store the context of current process and make it READY
+    [process_table_entry + 12] = SP % 512;
+    [process_table_entry + 14] = PTBR;
+    [process_table_entry + 15] = PTLR;
+    [process_table_entry + 4] = READY;
+
+// select next process
+    alias newPID R2;
+    newPID = (currentPID + 1)%3;
+    
+    alias new_process_table R3;
+    new_process_table = PROCESS_TABLE + newPID * 16;
+
+// retrieve the context stored in process table
+// by default we assume the process has a history in kernel stack
+    SP =  [new_process_table + 11] * 512 + [new_process_table + 12];
+    PTBR = [new_process_table + 14];
+    PTLR = [new_process_table + 15];
+
+    [SYSTEM_STATUS_TABLE + 1] = newPID;
+
+// if the process is new, it doesnt have a history in kernel stack, so SP points to user stack and return
+    if([new_process_table + 4] == CREATED) then
+        [new_process_table + 4] = RUNNING;
+        SP = [new_process_table + 13];
+        ireturn;
+    endif;
+
+    [new_process_table + 4] = RUNNING;
+
+    restore;
+    SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 13];
+breakpoint;
+ireturn;

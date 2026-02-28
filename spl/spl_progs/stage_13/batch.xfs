@@ -1,0 +1,11 @@
+fdisk
+load --os ../spl/spl_progs/stage_13/os_startup.xsm
+load --init ../expl/expl_progs/stage_13/odd.xsm
+load --idle ../expl/expl_progs/stage_13/idle.xsm
+load --exec ../expl/expl_progs/stage_13/even.xsm
+load --library ../expl/library.lib
+load --exhandler ../spl/spl_progs/stage_13/exception.xsm
+load --int=timer ../spl/spl_progs/stage_13/timer.xsm
+load --int=7 ../spl/spl_progs/stage_13/int7.xsm
+load --int=10 ../spl/spl_progs/stage_13/int10.xsm
+load --module 7 ../spl/spl_progs/stage_13/boot_module.xsm
