@@ -1,0 +1,20 @@
+alias currentPID R0;
+
+currentPID = [SYSTEM_STATUS_TABLE + 1];
+[PROCESS_TABLE + currentPID*16 + 4] = TERMINATED; // mark current process as terminated
+
+alias i R1;
+alias finish R2;
+i = (currentPID + 1)%16;
+finish = 1;
+
+// iterate to find if any process is remaining
+
+while(i != currentPID) do 
+    if(i != 0 && [PROCESS_TABLE + i*16 + 4] != TERMINATED) then
+        call SCHEDULER;
+    endif;
+    i = (i + 1)%16;
+endwhile;
+
+halt;

@@ -1,0 +1,13 @@
+fdisk
+load --os $HOME/myexpos/spl/spl_progs/stage_15/os_startup_module.xsm
+load --init $HOME/myexpos/expl/samples/odd.xsm
+load --int=7 $HOME/myexpos/spl/spl_progs/stage_15/int7.xsm
+load --library $HOME/myexpos/expl/samples/write_syscall.lib
+load --idle $HOME/myexpos/expl/samples/idle.xsm
+load --module 5 $HOME/myexpos/spl/spl_progs/stage_15/scheduler.xsm
+load --module 7 $HOME/myexpos/spl/spl_progs/stage_15/boot_module_odd_even.xsm
+load --module 0 $HOME/myexpos/spl/spl_progs/stage_15/mod0.xsm
+load --module 4 $HOME/myexpos/spl/spl_progs/stage_15/mod4.xsm
+load --int=timer $HOME/myexpos/spl/spl_progs/stage_15/timer.xsm
+load --int=10 $HOME/myexpos/spl/spl_progs/stage_15/int10.xsm
+load --exhandler $HOME/myexpos/spl/spl_progs/stage_15/exception.xsm
