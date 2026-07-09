@@ -1,0 +1,129 @@
+//set system call number of fork
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 8;
+
+alias userSP R0;
+userSP = SP;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias newPID R2;
+
+multipush(R0);
+R1 = 1; // get pcb entry
+call PROCESS_MANAGER;
+newPID = R0;
+multipop(R0);
+
+if(newPID == -1) then
+    SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+    [[PTBR + 2*((userSP -1)/512)]*512 + (userSP -1)%512] = -1; // fork failed
+else 
+    if([PTBR + 4] == -1) then  // heap isnt allocated yet
+        multipush(R0, R1, R2);
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [PTBR + 4] = R0;
+        [PTBR + 5] = "0110";
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [PTBR + 6] = R0;
+        [PTBR + 7] = "0110";
+        multipop(R0, R1, R2);
+    endif;
+
+    alias newPTBR R3;
+    newPTBR = PAGE_TABLE_BASE + newPID*20;
+        multipush(R0, R1, R2, R3);
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [newPTBR + 16] = R0; // new stack for child process
+        [newPTBR + 17] = "0110";
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [newPTBR + 18] = R0;
+        [newPTBR + 19] = "0110";
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [PROCESS_TABLE + newPID*16 + 11] = R0; // new userarea page for child process
+        multipop(R0, R1, R2, R3);
+    //-------------------Process Table----------------------
+
+    // some fields in process table are same for parent and child
+        [PROCESS_TABLE + newPID*16 + 3] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 3]; // user id
+        [PROCESS_TABLE + newPID*16 + 6] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 6]; // swap flag
+        [PROCESS_TABLE + newPID*16 + 10] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 10]; // userarea swap status
+        [PROCESS_TABLE + newPID*16 + 7] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 7]; // inode index
+        [PROCESS_TABLE + newPID*16 + 13] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13]; // UPTR
+
+    // other fields in process table are different
+        [PROCESS_TABLE + newPID*16 + 0] = 0; // tick: cpu time used by the process
+        [PROCESS_TABLE + newPID*16 + 9] = 0; // mode flag
+        [PROCESS_TABLE + newPID*16 + 12] = 0; // KPTR
+        [PROCESS_TABLE + newPID*16 + 2] = [SYSTEM_STATUS_TABLE + 1]; // parent pid
+        [PROCESS_TABLE + newPID*16 + 4] = CREATED; // state of child
+
+    //--------------Per Process Resource table------------------
+    alias i R4;
+    i = RESOURCE_TABLE_OFFSET;
+    while(i < 512) do
+        [[PROCESS_TABLE + newPID*16 + 11]*512 + i] = [[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 + i];
+        i = i + 1;
+    endwhile;
+
+    //------------------Disk map table-------------------------
+    i = 0;
+    while(i < 10) do
+        [DISK_MAP_TABLE + newPID*10 + i] = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + i];
+        i = i + 1;
+    endwhile;
+
+    //--------------------library, heap, code-------------------
+    i = 0;
+    while(i < 16) do 
+        [newPTBR + i] = [PTBR + i];
+        [newPTBR + i + 1] = [PTBR + i + 1];
+        if([PTBR + i] != -1) then
+            [MEMORY_FREE_LIST + [PTBR + i]] = [MEMORY_FREE_LIST + [PTBR + i]] + 1;
+        endif;
+        i = i + 2;
+    endwhile;
+
+    //------------------copy Parent stack to child stack---------
+    alias parentStack R5;
+    alias childStack R6;
+    parentStack = [PTBR + 16];
+    childStack = [newPTBR + 16];
+
+    // copy the entire first page of stack word by word
+    i = 0;
+    while(i < 512) do
+        [childStack*512 + i] = [parentStack*512 + i];
+        i = i + 1;
+    endwhile;
+
+    parentStack = [PTBR + 18];
+    childStack = [newPTBR + 18];
+
+    // copy the entire second page of stack word by word
+    i = 0;
+    while(i < 512) do
+        [childStack*512 + i] = [parentStack*512 + i];
+        i = i + 1;
+    endwhile;
+
+    [[PROCESS_TABLE + (newPID*16) + 11]*512] = BP;
+    [[PTBR + 2*((userSP - 1)/512)]*512 + (userSP -1)%512] = newPID; // parent gets pid of child 
+    [[newPTBR + 2*((userSP -1)/512)]*512 + (userSP -1)%512] = 0; // child gets zero
+
+    SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+
+ireturn;
+
+
+    
+
+

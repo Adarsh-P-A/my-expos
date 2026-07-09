@@ -1,0 +1,57 @@
+
+// MODE FLAG for read system call is 7
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 7;
+
+    alias userSP R1;
+    userSP = SP;
+
+// store SP in process table
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+
+// make SP point to kernel stack (but stack is empty so -1)
+    SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+    alias physicalPageNum R2;
+    alias offset R3;
+    alias fileDescPhysicalAddr R4;
+    alias fileDescriptor R5;
+
+// find the physical address of (userSP-4)
+    physicalPageNum = [PTBR + 2*((userSP - 4)/512)];
+    offset = (userSP - 4)%512;
+    fileDescPhysicalAddr = (physicalPageNum*512) + offset;
+    fileDescriptor = [fileDescPhysicalAddr];
+
+// get the physical address of (userSP-1) and store -1 there
+    alias physicalAddrRetVal R6;
+    physicalAddrRetVal = [PTBR + 2*((userSP-1)/512)]*512 + (userSP-1)%512;              
+
+if(fileDescriptor != -1) then
+
+    [physicalAddrRetVal] = -1;
+
+else
+    // get the physical address of (userSP-3) and get the address to store the input word
+    alias word R7;
+    word = [[PTBR + 2*((userSP-3)/512)]*512 + (userSP-3)%512]; 
+    multipush(R0, R1, R2, R3, R4, R5, R6, R7);
+    
+    alias functionNumber R1;
+    alias currentPID R2;
+    alias wordContent R3;
+
+    functionNumber = 4;
+    currentPID = [SYSTEM_STATUS_TABLE + 1];
+    wordContent = word;
+
+    call DEVICE_MANAGER;
+
+    multipop(R0, R1, R2, R3, R4, R5, R6, R7);
+
+    [physicalAddrRetVal] = 0;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0; // change the MODE FLAG back
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13]; // restore SP
+
+ireturn;

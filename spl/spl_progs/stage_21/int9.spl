@@ -1,0 +1,153 @@
+// save user stack pointer
+    alias userSP R0;
+    userSP = SP;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+
+// make SP point to kernel stack
+    SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 -1;
+
+// set the MODE flag with system call number
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 9;
+
+// get the name of file
+    alias physicalPageNum R1;
+    alias offset R2;
+    alias fileName R3;
+
+    physicalPageNum = [PTBR + 2*((userSP-4)/512)];
+    offset = (userSP-4)%512;
+    fileName = [physicalPageNum*512 + offset];
+
+// search this filename in inode table
+    alias index R4;
+    index = 0;
+
+    while(index < MAX_FILE_NUM) do
+        if([INODE_TABLE + (index*16) + 1] == fileName) then
+            break;
+        endif;
+        index = index + 1;
+    endwhile;
+
+// case 1[failure]: searched entire table and couldn't find OR found one file and it is not in XEXE format
+
+    if(index == MAX_FILE_NUM || [INODE_TABLE + (index*16) + 0] != EXEC) then
+        SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+        alias physicalAddrRet R5;
+        physicalAddrRet = [PTBR + 2*((userSP-1)/512)]*512 + (userSP-1)%512;
+        [physicalAddrRet] = -1; // failed
+    else
+
+    // case2[sucess]: got the inode index of required file in index
+
+    //Call  exit process from processor manager module
+        multipush(R0, R1, R2, R3, R4, R5);
+        R1 = 3;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        call PROCESS_MANAGER;
+        multipop(R0, R1, R2, R3, R4, R5);
+
+
+    //increment mem freelist and decrement mem free count in system status table
+        alias userarea R6;
+        userarea = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]; // can i use SP here ????
+        [MEMORY_FREE_LIST + userarea] = [MEMORY_FREE_LIST + userarea] + 1; // exit process decremented this, increment back
+        [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1; // exit process incremented this, decrement back (mem free count)
+    
+    //setup kernel stack, status and inode index in new process table entry
+        SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 11]*512 -1;
+        [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 4] = RUNNING;
+        [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1]*16) + 7] = index;
+
+    //new page table
+        PTBR = PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1]*20;
+        // library
+        [PTBR + 0] = 63;
+        [PTBR + 1] = "0100";
+        [PTBR + 2] = 64;
+        [PTBR + 3] = "0100";
+
+    //Don't allocate memory pages for heap. Instead, invalidate page table entries for heap
+        [PTBR + 4] = -1;
+        [PTBR + 5] = "0000";
+        [PTBR + 6] = -1;
+        [PTBR + 7] = "0000";
+
+    // backup userSP as we need R0 now
+        R7 = R0;
+    // allocate only one page for code, rest is allocated using demand paging
+        multipush(R1, R2, R3, R4, R5, R6, R7);
+        R1 = 5;
+        R2 = [INODE_TABLE + index*16 + 8];
+        R3 = [SYSTEM_STATUS_TABLE + 1];
+        call MEMORY_MANAGER;
+        multipop(R1, R2, R3, R4, R5, R6, R7); // R0 contains new memory page, don't pop onto it
+        [PTBR + 8] = R0;
+        [PTBR + 9] = "0100";
+
+    // invalidate rest of code pages
+        alias i R8;
+        i = 10;
+        while(i < 16) do
+            [PTBR + i] = -1;
+            [PTBR + i + 1] = "0000";
+            i = i + 2;
+        endwhile;
+
+    // allocate pages for stack
+        multipush(R0, R1, R2, R3, R4, R5, R6, R7, R8);
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [PTBR + 16] = R0;
+        [PTBR + 17] = "0110";
+
+
+        R1 = 1;
+        call MEMORY_MANAGER;
+        [PTBR + 18] = R0;
+        [PTBR + 19] = "0110";
+        multipop(R0, R1, R2, R3, R4, R5, R6, R7, R8);
+
+    // load ip of first line of code into stack
+        [[PTBR+16]*512] = [[PTBR+8]*512 + 1];
+
+
+    //make SP point to the user stack
+        SP = 8 * 512;
+
+    //initialize disk map table
+        i = 0;
+        while(i < 10) do
+            [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + i] = -1;
+            i = i + 1;
+        endwhile;
+    //map for code blocks
+        i = 8;
+        while(i < 12) do
+            if([INODE_TABLE + index*16 + i] != -1) then
+                [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 1]*10 + i-4] = [INODE_TABLE + index*16 + i];
+            endif;
+            i = i + 1;
+        endwhile;
+
+
+    // return success
+        alias physicalAddrRet R5;
+        userSP = R7; // retrieve userSP back
+        physicalAddrRet = [PTBR + 2*((userSP-1)/512)]*512 + (userSP-1)%512;
+        [physicalAddrRet] = 0; // success
+
+
+endif;
+
+// revert MODE flag
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 9] = 0;
+    
+
+ireturn;
+
+
+
+
+
+
