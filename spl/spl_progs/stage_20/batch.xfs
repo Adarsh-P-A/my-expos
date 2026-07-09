@@ -1,0 +1,20 @@
+fdisk
+load --os ../spl/spl_progs/stage_20/os_startup_module.xsm
+load --library ../expl/library.lib
+load --init ../expl/expl_progs/stage_20/linklist.xsm
+load --idle ../expl/expl_progs/stage_20/idle.xsm
+load --int=6 ../spl/spl_progs/stage_20/int6.xsm
+load --int=7 ../spl/spl_progs/stage_20/int7.xsm
+load --int=9 ../spl/spl_progs/stage_20/int9.xsm
+load --int=8 ../spl/spl_progs/stage_20/int8.xsm
+load --int=10 ../spl/spl_progs/stage_20/int10.xsm
+load --int=timer ../spl/spl_progs/stage_20/timer.xsm
+load --int=console ../spl/spl_progs/stage_20/console_interrupt_handler.xsm
+load --int=disk ../spl/spl_progs/stage_20/disk_interrupt_handler.xsm
+load --module 0 ../spl/spl_progs/stage_20/mod0.xsm
+load --module 1 ../spl/spl_progs/stage_20/mod1.xsm
+load --module 2 ../spl/spl_progs/stage_20/mod2.xsm
+load --module 4 ../spl/spl_progs/stage_20/mod4.xsm
+load --module 5 ../spl/spl_progs/stage_20/scheduler.xsm
+load --module 7 ../spl/spl_progs/stage_20/boot_module.xsm
+load --exhandler ../spl/spl_progs/stage_20/exception.xsm

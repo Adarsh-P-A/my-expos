@@ -1,0 +1,105 @@
+alias functionNum R1;
+alias currPID R2;
+
+if(functionNum == 1) then
+//----------Get pcb entry-------------
+    alias process R3;
+    process = 2; // ignore idle and init
+    while(process < MAX_PROC_NUM && [PROCESS_TABLE + process*16 + 4]!= TERMINATED) do
+        process = process + 1;
+    endwhile;
+
+    if(process < MAX_PROC_NUM) then
+        [PROCESS_TABLE + process*16 + 1] = process;
+        [PROCESS_TABLE + process*16 + 4] = ALLOCATED;
+        [PROCESS_TABLE + process*16 + 14] = PAGE_TABLE_BASE + process*20;
+        [PROCESS_TABLE + process*16 + 15] = 10;
+        R0 = process;
+    else
+        R0 = -1;
+    endif;
+    return;
+endif;
+
+if(functionNum == 2) then
+//----------Free user area page-------------
+    alias userArea R3;
+    userArea = [PROCESS_TABLE + currPID*16 + 11];
+
+    multipush(R0, R1, R2, R3);
+    R1 = 2;
+    R2 = userArea;
+    call MEMORY_MANAGER; // to release page
+    multipop(R0, R1, R2, R3);
+    return;
+
+endif;
+
+if(functionNum == 3) then
+//-----------Exit process---------------------(recursive module calls)
+    multipush(R0, R1, R2, R3);
+    R1 = 4;
+    R2 = currPID;
+    call PROCESS_MANAGER; // to free page table
+    multipop(R0, R1, R2, R3);
+
+    multipush(R0, R1, R2, R3);
+    R1 = 2;
+    R2 = currPID;
+    call PROCESS_MANAGER; // to free user area page
+    multipop(R0, R1, R2, R3);
+
+    [PROCESS_TABLE + (currPID*16) + 4] = TERMINATED;
+    return;
+
+endif;
+
+if(functionNum == 4) then
+//----------Free page table---------------------
+    //invalidate library entry in page table
+    [PTBR + 0] = -1;
+    [PTBR + 1] = "0000";
+    [PTBR + 2] = -1;
+    [PTBR + 3] = "0000";
+
+    // for other valid entries free that page
+    alias i R4;
+    i = 4;
+    while(i < 20) do
+        if([PTBR + i] != -1) then
+            multipush(R0, R1, R2, R3, R4);
+            R1 = 2;
+            R2 = [PTBR + i];
+            call MEMORY_MANAGER; // to release page
+            multipop(R0, R1, R2, R3, R4);
+            [PTBR + i] = -1;
+            [PTBR + i + 1] = "0000";
+        endif;
+        i = i+2;
+    endwhile;
+
+// invalidate heap from DISK_FREE_LIST
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = 4;
+    R2 = [DISK_MAP_TABLE + currPID*10 + 2];
+    call MEMORY_MANAGER;
+    R1 = 4;
+    R2 = [DISK_MAP_TABLE + currPID*10 + 3];
+    call MEMORY_MANAGER;
+    multipop(R0, R1, R2, R3, R4);
+
+// invalidate stack from DISK_FREE_LIST 
+
+    multipush(R0, R1, R2, R3, R4);
+    R1 = 4;
+    R2 = [DISK_MAP_TABLE + currPID*10 + 8];
+    call MEMORY_MANAGER;
+    R1 = 4;
+    R2 = [DISK_MAP_TABLE + currPID*10 + 9];
+    call MEMORY_MANAGER;
+    multipop(R0, R1, R2, R3, R4);
+    return;
+endif;
+
+return;

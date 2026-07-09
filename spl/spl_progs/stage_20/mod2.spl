@@ -1,0 +1,115 @@
+alias functionNum R1;
+
+if(functionNum == 1) then
+//----------Get free page-----------------
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1; // wait mem count + this process
+
+    // busy loop when mem free count is zero
+    while([SYSTEM_STATUS_TABLE + 2]==0) do
+        [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_MEM;
+        call SCHEDULER;
+    endwhile;
+
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1; // wait mem count - this process
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1; // mem free count - this page
+
+    alias i R2;
+    i = 76;
+
+    while(i < NUM_MEM_PAGES && [MEMORY_FREE_LIST + i] != 0) do
+        i = i + 1;
+    endwhile;
+
+    [MEMORY_FREE_LIST + i] = 1;
+    R0 = i;
+    return;
+endif;
+
+if(functionNum == 2) then
+//----------Release free page----------------
+    alias pageNum R2;
+    [MEMORY_FREE_LIST + pageNum] = [MEMORY_FREE_LIST + pageNum] - 1; 
+    
+    // if no other processes using this page then, it is free
+    if([MEMORY_FREE_LIST + pageNum] == 0) then
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1; // mem free count + this page
+    endif;
+
+    alias i R2;
+    i = 0; // I could have ignored idle process
+
+    while(i < MAX_PROC_NUM) do
+        if([PROCESS_TABLE + i*16 + 4] == WAIT_MEM) then
+            [PROCESS_TABLE + i*16 + 4] = READY;
+        endif;
+        i = i + 1;
+    endwhile;
+endif;
+
+if(functionNum == 4) then
+//-----------------Release Block----------------
+    alias blockNum R2;
+
+    [DISK_FREE_LIST + blockNum] = [DISK_FREE_LIST + blockNum] -1;
+
+endif;
+
+if (functionNum == 5) then
+    alias blockNumber R2;
+    alias pid R3;
+    alias codePage R4;
+    alias pageTableEntry R5;
+    
+    pid = 1;
+
+    while (pid < MAX_PROC_NUM) do
+        codePage = 4;
+
+        while (codePage < 8) do
+            // [PROCESS_TABLE + pid*16 + 14] = PTBR
+            // PTBR + codePage * 2 -> Iterate through Code Segment pages
+            if ([DISK_MAP_TABLE + pid*10 + codePage] == blockNumber) then
+                pageTableEntry = [PROCESS_TABLE + pid*16 + 14] + codePage*2;
+                
+                if ([pageTableEntry] != -1) then
+                    alias physicalPage R6;
+                    physicalPage = [pageTableEntry];
+
+                    // increment MEMORY_FREE_LIST (shared page)
+                    [MEMORY_FREE_LIST + physicalPage] = [MEMORY_FREE_LIST + physicalPage] + 1;
+
+                    R0 = physicalPage;
+
+                    return; // early return
+                endif;
+            endif;
+
+            codePage = codePage + 1;
+        endwhile;
+
+        pid = pid + 1;
+    endwhile;
+
+    alias physicalPage R6;
+
+    // Otherwise call Get Free Page
+    multipush(R0, R1, R2, R3, R4, R5);
+    R1 = 1;
+    call MEMORY_MANAGER;
+    physicalPage = R0;
+    multipop(R0, R1, R2, R3, R4, R5);
+
+    // Load the contents into the memory page
+    multipush(R0, R1, R2, R3, R4, R5, R6);
+    R1 = 2;
+    R4 = blockNumber;
+    R2 = [SYSTEM_STATUS_TABLE + 1];
+    R3 = physicalPage;
+    call DEVICE_MANAGER;
+    multipop(R0, R1, R2, R3, R4, R5, R6);
+
+    R0 = physicalPage;
+endif;
+
+breakpoint;
+return;
