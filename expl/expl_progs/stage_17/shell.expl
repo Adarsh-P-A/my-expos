@@ -1,0 +1,18 @@
+int main()
+{
+    decl
+        int temp;
+        str name;
+    enddecl
+    begin
+
+        temp = exposcall("Write", -2, "program_name>");
+        temp = exposcall("Read", -1, name);
+        temp = exposcall("Exec", name);
+        if(temp != 0) then
+            temp = exposcall("Write",-2, "InvalidInput");
+            break;
+        endif;
+        return 0;
+    end
+}

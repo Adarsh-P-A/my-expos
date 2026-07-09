@@ -1,0 +1,49 @@
+alias functionNum R1;
+alias pageNum R2;
+
+if(functionNum == 1) then
+//----------Get free page-----------------
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] + 1; // wait mem count + this process
+
+    // busy loop when mem free count is zero
+    while([SYSTEM_STATUS_TABLE + 2]==0) do
+        [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_MEM;
+        call SCHEDULER;
+    endwhile;
+
+    [SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3] - 1; // wait mem count - this process
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] - 1; // mem free count - this page
+
+    alias i R3;
+    i = 76;
+
+    while(i < NUM_MEM_PAGES && [MEMORY_FREE_LIST + i] != 0) do
+        i = i + 1;
+    endwhile;
+
+    [MEMORY_FREE_LIST + i] = 1;
+    R0 = i;
+    return;
+endif;
+
+if(functionNum == 2) then
+//----------Release free page----------------
+    [MEMORY_FREE_LIST + pageNum] = [MEMORY_FREE_LIST + pageNum] - 1; 
+    
+    // if no other processes using this page then, it is free
+    if([MEMORY_FREE_LIST + pageNum] == 0) then
+    [SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2] + 1; // mem free count + this page
+    endif;
+
+    alias i R3;
+    i = 0; // I could have ignored idle process
+
+    while(i < MAX_PROC_NUM) do
+        if([PROCESS_TABLE + i*16 + 4] == WAIT_MEM) then
+            [PROCESS_TABLE + i*16 + 4] = READY;
+        endif;
+        i = i + 1;
+    endwhile;
+endif;
+breakpoint;
+return;

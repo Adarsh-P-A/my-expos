@@ -1,0 +1,63 @@
+alias functionNum R1;
+alias currPID R2;
+
+if(functionNum == 2) then
+//----------Free user area page-------------
+    alias userArea R3;
+    userArea = [PROCESS_TABLE + currPID*16 + 11];
+
+    multipush(R0, R1, R2, R3);
+    R1 = 2;
+    R2 = userArea;
+    call MEMORY_MANAGER; // to release page
+    multipop(R0, R1, R2, R3);
+    return;
+
+endif;
+
+if(functionNum == 3) then
+//-----------Exit process---------------------(recursive module calls)
+    multipush(R0, R1, R2, R3);
+    R1 = 4;
+    R2 = currPID;
+    call PROCESS_MANAGER; // to free page table
+    multipop(R0, R1, R2, R3);
+
+    multipush(R0, R1, R2, R3);
+    R1 = 2;
+    R2 = currPID;
+    call PROCESS_MANAGER; // to free user area page
+    multipop(R0, R1, R2, R3);
+
+    [PROCESS_TABLE + (currPID*16) + 4] = TERMINATED;
+    return;
+
+endif;
+
+if(functionNum == 4) then
+//----------Free page table---------------------
+    //invalidate library entry in page table
+    [PTBR + 0] = -1;
+    [PTBR + 1] = "0000";
+    [PTBR + 2] = -1;
+    [PTBR + 3] = "0000";
+
+    // for other valid entries free that page
+    alias i R4;
+    i = 4;
+    while(i < 20) do
+        if([PTBR + i] != -1) then
+            multipush(R0, R1, R2, R3, R4);
+            R1 = 2;
+            R2 = [PTBR + i];
+            call MEMORY_MANAGER; // to release page
+            multipop(R0, R1, R2, R3, R4);
+            [PTBR + i] = -1;
+            [PTBR + i + 1] = "0000";
+        endif;
+        i = i+2;
+    endwhile;
+    return;
+endif;
+
+return;
