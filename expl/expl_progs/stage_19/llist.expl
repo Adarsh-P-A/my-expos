@@ -1,0 +1,46 @@
+type
+    node {
+        int val;
+        node next;
+    }
+endtype
+
+int main() {
+
+    decl    
+        int n, m, temp, t, heap;
+         node h, hcopy, newNode;
+    enddecl
+    begin
+    heap = initialize();
+    temp = exposcall("Heapset");
+    temp = exposcall("Write", -2, "Enter n");
+    temp = exposcall("Read", -1, n);
+
+    h = alloc();
+    hcopy = alloc();
+
+    m = n;
+
+    while(n > 0) do 
+        newNode = alloc();
+        newNode.next = null;
+        temp = exposcall("Read", -1, newNode.val);
+        if(m==n) then // first entry
+            h = newNode;
+            hcopy = newNode;
+        endif;
+        h.next = newNode;
+        h = newNode;
+        n = n - 1;
+    endwhile;
+
+    while(m > 0) do
+        temp = exposcall("Write", -2, hcopy.val);
+        hcopy = hcopy.next;
+        m = m - 1;
+    endwhile;
+
+    return 0;
+    end
+}

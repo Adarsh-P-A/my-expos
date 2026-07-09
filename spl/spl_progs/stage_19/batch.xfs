@@ -1,0 +1,24 @@
+fdisk
+load --os ../spl/spl_progs/stage_19/os_startup_module.xsm
+load --library ../expl/library.lib
+load --init ../expl/expl_progs/stage_19/shell.xsm
+load --exec ../expl/expl_progs/stage_19/numbers.xsm
+load --exec ../expl/expl_progs/stage_19/even.xsm
+load --exec ../expl/expl_progs/stage_19/prime.xsm
+load --exec ../expl/expl_progs/stage_19/bb_sort.xsm
+load --exec ../expl/expl_progs/stage_19/llist.xsm
+load --idle ../expl/expl_progs/stage_19/idle.xsm
+load --int=6 ../spl/spl_progs/stage_19/int6.xsm
+load --int=7 ../spl/spl_progs/stage_19/int7.xsm
+load --int=9 ../spl/spl_progs/stage_19/int9.xsm
+load --int=10 ../spl/spl_progs/stage_19/int10.xsm
+load --int=timer ../spl/spl_progs/stage_19/timer.xsm
+load --int=console ../spl/spl_progs/stage_19/console_interrupt_handler.xsm
+load --int=disk ../spl/spl_progs/stage_19/disk_interrupt_handler.xsm
+load --module 0 ../spl/spl_progs/stage_19/mod0.xsm
+load --module 1 ../spl/spl_progs/stage_19/mod1.xsm
+load --module 2 ../spl/spl_progs/stage_19/mod2.xsm
+load --module 4 ../spl/spl_progs/stage_19/mod4.xsm
+load --module 5 ../spl/spl_progs/stage_19/scheduler.xsm
+load --module 7 ../spl/spl_progs/stage_19/boot_module.xsm
+load --exhandler ../spl/spl_progs/stage_19/exception.xsm
