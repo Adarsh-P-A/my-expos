@@ -1,0 +1,36 @@
+fdisk
+load --os ../spl/spl_progs/stage_25/os_startup.xsm
+load --library ../expl/library.lib
+load --module 0 ../spl/spl_progs/stage_25/MOD0_resource_manager.xsm
+load --module 1 ../spl/spl_progs/stage_25/MOD1_process_manager.xsm
+load --module 2 ../spl/spl_progs/stage_25/MOD2_memory_manager.xsm
+load --module 3 ../spl/spl_progs/stage_25/MOD3_file_manager.xsm
+load --module 4 ../spl/spl_progs/stage_25/MOD4_device_manager.xsm
+load --module 5 ../spl/spl_progs/stage_25/MOD5_scheduler.xsm
+load --module 7 ../spl/spl_progs/stage_25/MOD7_boot_module.xsm
+load --int=timer ../spl/spl_progs/stage_25/timer.xsm
+load --int=console ../spl/spl_progs/stage_25/console.xsm
+load --int=disk ../spl/spl_progs/stage_25/disk.xsm
+load --int=4 ../spl/spl_progs/stage_25/INT4.xsm
+load --int=5 ../spl/spl_progs/stage_25/INT5.xsm
+load --int=6 ../spl/spl_progs/stage_25/INT6.xsm
+load --int=7 ../spl/spl_progs/stage_25/INT7.xsm
+load --int=8 ../spl/spl_progs/stage_25/INT8.xsm
+load --int=9 ../spl/spl_progs/stage_25/INT9.xsm
+load --int=10 ../spl/spl_progs/stage_25/INT10.xsm
+load --int=11 ../spl/spl_progs/stage_25/INT11.xsm
+load --int=13 ../spl/spl_progs/stage_25/INT13.xsm
+load --int=14 ../spl/spl_progs/stage_25/INT14.xsm
+load --int=15 ../spl/spl_progs/stage_25/INT15.xsm
+load --exhandler ../spl/spl_progs/stage_25/exhandler.xsm 
+load --exec ../expl/expl_progs/stage_25/numbers.xsm
+load --exec ../expl/expl_progs/stage_25/odd.xsm
+load --exec ../expl/expl_progs/stage_25/ls.xsm
+load --exec ../expl/expl_progs/stage_25/cat.xsm
+load --exec ../expl/expl_progs/stage_25/cp.xsm
+load --exec ../expl/expl_progs/stage_25/rm.xsm
+load --exec ../expl/expl_progs/stage_25/reverse.xsm
+load --exec ../expl/expl_progs/stage_25/append.xsm
+load --exec ../expl/expl_progs/stage_25/rwsync.xsm
+load --exec ../expl/expl_progs/stage_25/assg4.xsm
+load --data ../expl/expl_progs/stage_25/sample.dat

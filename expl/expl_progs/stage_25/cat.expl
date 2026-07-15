@@ -1,0 +1,35 @@
+int main(){
+decl
+  int temp, fd;
+  str fileName, word;
+enddecl
+begin
+  temp = exposcall("Write", -2, "Enter file name");
+  temp = exposcall("Read", -1, fileName);
+
+  fd = exposcall("Open", fileName);
+  if(fd == -1) then
+    temp = exposcall("Write", -2, "File not found");
+  else
+    if(fd == -2) then
+      temp = exposcall("Write", -2, "System max file opened");
+    else
+      if(fd == -3) then
+        temp = exposcall("Write", -2, "Proc max file opened");
+      endif;
+    endif;
+  endif;
+  if(fd >= 0) then
+    while(3 == 3) do
+      temp = exposcall("Read", fd, word);
+      if(temp == -2) then
+        temp = exposcall("Write", -2, "EOF");
+        break;
+      endif;
+      temp = exposcall("Write", -2, word);
+    endwhile;
+  endif;
+  temp = exposcall("Close", fd);
+  return 0;
+end
+}
