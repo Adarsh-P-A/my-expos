@@ -1,0 +1,40 @@
+fdisk
+load --os ../spl/spl_progs/stage_26/os_startup.xsm
+load --library ../expl/library.lib
+load --module 0 ../spl/spl_progs/stage_26/MOD0_resource_manager.xsm
+load --module 1 ../spl/spl_progs/stage_26/MOD1_process_manager.xsm
+load --module 2 ../spl/spl_progs/stage_26/MOD2_memory_manager.xsm
+load --module 3 ../spl/spl_progs/stage_26/MOD3_file_manager.xsm
+load --module 4 ../spl/spl_progs/stage_26/MOD4_device_manager.xsm
+load --module 5 ../spl/spl_progs/stage_26/MOD5_scheduler.xsm
+load --module 7 ../spl/spl_progs/stage_26/MOD7_boot_module.xsm
+load --int=timer ../spl/spl_progs/stage_26/timer.xsm
+load --int=console ../spl/spl_progs/stage_26/console.xsm
+load --int=disk ../spl/spl_progs/stage_26/disk.xsm
+load --int=4 ../spl/spl_progs/stage_26/INT4.xsm
+load --int=5 ../spl/spl_progs/stage_26/INT5.xsm
+load --int=6 ../spl/spl_progs/stage_26/INT6.xsm
+load --int=7 ../spl/spl_progs/stage_26/INT7.xsm
+load --int=8 ../spl/spl_progs/stage_26/INT8.xsm
+load --int=9 ../spl/spl_progs/stage_26/INT9.xsm
+load --int=10 ../spl/spl_progs/stage_26/INT10.xsm
+load --int=11 ../spl/spl_progs/stage_26/INT11.xsm
+load --int=12 ../spl/spl_progs/stage_26/INT12.xsm
+load --int=13 ../spl/spl_progs/stage_26/INT13.xsm
+load --int=14 ../spl/spl_progs/stage_26/INT14.xsm
+load --int=15 ../spl/spl_progs/stage_26/INT15.xsm
+load --int=16 ../spl/spl_progs/stage_26/INT16.xsm
+load --int=17 ../spl/spl_progs/stage_26/INT17.xsm
+load --exhandler ../spl/spl_progs/stage_26/exhandler.xsm 
+load --idle ../expl/expl_progs/stage_24/idle.xsm
+load --shell ../expl/expl_progs/stage_25/shell.xsm 
+load --init ../expl/expl_progs/stage_25/login.xsm 
+load --data ../expl/expl_progs/stage_25/sample.dat
+load --data ../expl/expl_progs/stage_24/numbers.dat
+load --exec ../expl/expl_progs/stage_25/ls.xsm
+load --exec ../expl/expl_progs/stage_25/cat.xsm
+load --exec ../expl/expl_progs/stage_25/rm.xsm
+load --exec ../expl/expl_progs/stage_25/cp.xsm
+load --exec ../expl/expl_progs/stage_25/lu.xsm
+load --exec ../expl/expl_progs/stage_25/ru.xsm
+load --exec ../expl/expl_progs/stage_25/touch.xsm
