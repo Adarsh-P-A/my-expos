@@ -1,0 +1,81 @@
+// switch to kernel stack
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+alias userSP R1;
+userSP = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+// extract system call number
+alias sysCallNum R2;
+sysCallNum = [[PTBR + 2*((userSP-5)/512)]*512 + (userSP-5)%512];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = sysCallNum;
+
+alias resourceTable R3;
+resourceTable = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 + RESOURCE_TABLE_OFFSET;
+
+if(sysCallNum == 19) then
+//-----------SemLock----------------
+    // what i have is the index in the resource table
+    alias semaphoreFD R4;
+    semaphoreFD = [[PTBR + 2*((userSP-4)/512)]*512 + (userSP-4)%512];
+
+    // check if it is a semaphore and semaphore id is valid
+    if(semaphoreFD < 0 || semaphoreFD > 7 || [resourceTable + semaphoreFD*2]!= 1) then
+            print "SEM_LOK_ERR";
+            [[PTBR + 2*((userSP-1)/512)]*512 + (userSP - 1)%512] = -1;
+    else
+        alias semaphoreID R5;
+        semaphoreID = [resourceTable + semaphoreFD*2 + 1];
+        // wait till the semaphore is free
+        while([SEMAPHORE_TABLE + semaphoreID * 4] != -1 && [SEMAPHORE_TABLE + semaphoreID*4] != [SYSTEM_STATUS_TABLE + 1]) do
+            [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_SEMAPHORE;
+            [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] = semaphoreID;
+            multipush(R0, R1, R2, R3, R4, R5);
+            call SCHEDULER;
+            multipop(R0, R1, R2, R3, R4, R5);
+        endwhile;
+        // set locking_pid in semaphore table
+        [SEMAPHORE_TABLE + semaphoreID*4] = [SYSTEM_STATUS_TABLE + 1];
+        [[PTBR + 2*((userSP-1)/512)]*512 + (userSP - 1)%512] = 0;
+    endif;
+endif;
+
+if(sysCallNum == 20) then
+//-----------SemUnlock----------------
+    // what i have is the index in the resource table
+    alias semaphoreFD R4;
+    semaphoreFD = [[PTBR + 2*((userSP-4)/512)]*512 + (userSP-4)%512];
+
+    // check if semaphore id is valid
+    if(semaphoreFD < 0 || semaphoreFD > 7 || [resourceTable + semaphoreFD*2]!= 1) then
+            print "SEM_UNL_ERR";
+            [[PTBR + 2*((userSP-1)/512)]*512 + (userSP - 1)%512] = -1;
+    else
+        alias semaphoreID R5;
+        semaphoreID = [resourceTable + semaphoreFD*2 + 1];
+        // check it the semaphore is locked by some process
+        if([SEMAPHORE_TABLE + semaphoreID*4] != -1) then
+            // if it is not the call process, i cannot release it
+            if([SEMAPHORE_TABLE + semaphoreID*4] != [SYSTEM_STATUS_TABLE + 1]) then
+                print "SEM_UNL_ERR";
+                [[PTBR + 2*((userSP-1)/512)]*512 + (userSP - 1)%512] = -2;
+            else
+                [SEMAPHORE_TABLE + semaphoreID*4] = -1;
+                alias i R6;
+                i = 0;
+                // wake up all the process waiting for this semaphores
+                while(i < MAX_PROC_NUM) do
+                    if([PROCESS_TABLE + i*16 + 4] == WAIT_SEMAPHORE && [PROCESS_TABLE + i*16 + 5] == semaphoreID) then
+                        [PROCESS_TABLE + i*16 + 4] = READY;
+                    endif;
+                    i = i + 1;
+                endwhile;
+                [[PTBR + 2 * ((userSP - 1) / 512)] * 512 + (userSP - 1) % 512] = 0;
+            endif;
+        endif;
+    endif;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+
+ireturn;

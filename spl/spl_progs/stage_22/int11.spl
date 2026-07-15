@@ -1,0 +1,59 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+alias userSP R4;
+userSP = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+alias functionNum R1;
+alias retAddr R2;
+
+functionNum = [[PTBR + 2*((userSP - 5)/512)]*512 + (userSP -5)%512];
+retAddr = [PTBR + 2*((userSP - 1)/512)]*512 + (userSP -1)%512;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = functionNum;
+
+if(functionNum == 11) then
+//-------------Get pid-----------------
+    [retAddr] = [SYSTEM_STATUS_TABLE + 1];
+endif;
+
+if(functionNum == 12) then
+//------------Get ppid------------------
+    [retAddr] = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 2];
+endif;
+
+if(functionNum == 13) then
+//-------------------Wait---------------
+
+    alias pid R3;
+    pid = [[PTBR + 2*((userSP - 4)/512)]*512 + (userSP - 4)%512];
+    if(pid < 0 || pid > 15 || [PROCESS_TABLE + pid*16 + 4] == TERMINATED || pid == [SYSTEM_STATUS_TABLE + 1]) then
+        [retAddr] = -1;
+    else 
+        [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4] = WAIT_PROCESS;
+        [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] = pid;
+        multipush(R0, R1, R2, R3, R4);
+        call SCHEDULER;
+        multipush(R0, R1, R2, R3, R4);
+    endif;
+    [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+    [retAddr] = 0;
+endif;
+
+if(functionNum == 14) then
+//-----------------Signal----------------
+
+    alias i R5;
+    i = 0;
+    while(i < MAX_PROC_NUM) do
+        if([PROCESS_TABLE + i*16 + 4] == WAIT_PROCESS && [PROCESS_TABLE + i*16 + 5] == [SYSTEM_STATUS_TABLE + 1]) then
+            [PROCESS_TABLE + i*16 + 4] = READY;
+        endif;
+        i = i + 1;
+    endwhile;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = userSP;
+
+ireturn;
+

@@ -1,0 +1,75 @@
+// switch to kernel stack
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13] = SP;
+alias userSP R5;
+userSP = SP;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+// extract system call number
+alias sysCallNum R1;
+sysCallNum = [[PTBR + 2*((userSP - 5)/512)]*512 + (userSP - 5)%512];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = sysCallNum;
+alias resourceTable R2;
+resourceTable = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE]*16 + 11]*512 + RESOURCE_TABLE_OFFSET;
+
+if(sysCallNum == 17) then
+//------------semget system call--------------
+    //find a free entry in resource table
+    alias i R3;
+    i= 0;
+    while(i < 8) do 
+        if([resourceTable + i*2] != -1) then
+            break;
+        endif;
+        i = i + 1;
+    endwhile;
+    // 2 cases, no free entry or found a free entry
+    if(i == 8) then
+        print "SEM_GET_ERR";
+        [[PTBR +  2*((userSP -1)/512)]*512 + (userSP - 1)%512] = -1;
+    else
+        // call aquire semaphore and store the value in perprocess resource table
+        multipush(R1, R2, R3, R5);
+        R1 = 6;
+        R2 = [SYSTEM_STATUS_TABLE];
+        call RESOURCE_MANAGER;
+        multipop(R1, R2, R3, R5);
+        if(R0 == -1) then // no semaphore (sad)
+            print "SEM_GET_ERR";
+            [[PTBR +  2*((userSP -1)/512)]*512 + (userSP - 1)%512] = -2;
+        else 
+            [resourceTable + i*2] = 1; // set 1 for semaphore
+            [resourceTable + i*2 + 1] = R0; // semaphore id
+            [[PTBR +  2*((userSP -1)/512)]*512 + (userSP - 1)%512] = i; // return index of resource table
+        endif;
+    endif;
+endif;
+
+if(sysCallNum == 18) then
+//------------sem-release system call---------------
+    // what we have is the index in resource table
+    alias semaphoreFD R3;
+    semaphoreFD = [[PTBR + 2*((userSP - 4)/512)]*512 + (userSP - 4)%512];
+
+    // there are only 8 entries, check the bound
+    if(semaphoreFD < 0 || semaphoreFD > 7 || [resourceTable + semaphoreFD*2]!= 1) then
+        print "SEM_REL_ERR";
+        [[PTBR + 2*((userSP-1)/512)]*512 + (userSP - 1)%512] = -1;
+    else
+        multipush(R1, R2, R3, R5);
+        R1 = 7;
+        R2 = [SYSTEM_STATUS_TABLE + 1];
+        R3 = semaphoreFD;
+        call RESOURCE_MANAGER;
+        multipop(R1, R2, R3, R5);
+
+        // invalidate those entries in resource table
+        [resourceTable + 2 * semaphoreFD] = -1;
+        [resourceTable + 2 * semaphoreFD + 1] = -1;
+        [[PTBR + 2 * ((userSP - 1) / 512)] * 512 + (userSP - 1) % 512] = 0;
+    endif;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9] = 0;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+
+ireturn;
