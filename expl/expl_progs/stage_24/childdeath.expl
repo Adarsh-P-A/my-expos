@@ -1,0 +1,27 @@
+int main () {
+    decl
+        int temp,x,y, temp2;
+    enddecl
+    begin
+        temp2 = exposcall("Write", -2, "Parent");
+        temp2 = exposcall("Write", -2, "Parent");
+        temp = exposcall("Fork");
+        temp = exposcall("Fork");
+        temp = exposcall("Fork");
+        if(temp != 0) then
+            temp2 = exposcall("Wait",temp);
+        endif;
+        if(temp==0) then // child process
+            x = 0;
+            while(x < 100) do   
+                temp2 = exposcall("Write", -2, x);
+                x = x + 1;
+            endwhile;
+        endif;
+         if(temp != 0) then
+            temp2 = exposcall("Write", -2, "Parent");
+            temp2 = exposcall("Write", -2, "Parent");
+        endif;
+        return 0;
+    end
+}

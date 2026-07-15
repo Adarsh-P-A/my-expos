@@ -1,0 +1,29 @@
+fdisk
+load --os ../spl/spl_progs/stage_24/os_startup.xsm
+load --library ../expl/library.lib
+load --module 0 ../spl/spl_progs/stage_24/MOD0.xsm
+load --module 1 ../spl/spl_progs/stage_24/MOD1.xsm
+load --module 2 ../spl/spl_progs/stage_23/MOD2.xsm
+load --module 3 ../spl/spl_progs/stage_24/MOD3.xsm
+load --module 4 ../spl/spl_progs/stage_23/MOD4.xsm
+load --module 5 ../spl/spl_progs/stage_23/scheduler.xsm
+load --module 7 ../spl/spl_progs/stage_24/boot_module.xsm
+load --int=timer ../spl/spl_progs/stage_23/TIMER.xsm
+load --int=console ../spl/spl_progs/stage_23/console_interrupt.xsm
+load --int=disk ../spl/spl_progs/stage_23/disk_interrupt.xsm
+load --int=4 ../spl/spl_progs/stage_23/INT4.xsm
+load --int=5 ../spl/spl_progs/stage_24/INT5.xsm
+load --int=6 ../spl/spl_progs/stage_24/INT6.xsm
+load --int=7 ../spl/spl_progs/stage_23/INT7.xsm
+load --int=8 ../spl/spl_progs/stage_24/INT8_M.xsm
+load --int=9 ../spl/spl_progs/stage_23/INT9.xsm
+load --int=10 ../spl/spl_progs/stage_23/INT10.xsm
+load --int=11 ../spl/spl_progs/stage_23/INT11.xsm
+load --int=13 ../spl/spl_progs/stage_23/INT13.xsm
+load --int=14 ../spl/spl_progs/stage_23/INT14.xsm
+load --int=15 ../spl/spl_progs/stage_23/INT15.xsm
+load --exhandler ../spl/spl_progs/stage_23/EXHANDLER.xsm
+load --idle ../expl/expl_progs/stage_24/idle.xsm
+load --init ../expl/expl_progs/stage_24/childdeath.xsm
+load --data ../expl/expl_progs/stage_24/sample.dat
+load --data ../expl/expl_progs/stage_24/numbers.dat
