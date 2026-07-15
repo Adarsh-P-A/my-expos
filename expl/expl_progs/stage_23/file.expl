@@ -1,0 +1,25 @@
+int main() {
+    decl
+        str fileName, command;
+        int temp, permission;
+    enddecl
+
+    begin
+        temp = exposcall("Write", -2, "File Name:");
+        temp = exposcall("Read", -1, fileName);
+        temp = exposcall("Write", -2, "Permission:");
+        temp = exposcall("Read", -1, permission);
+        temp = exposcall("Create", fileName, permission);
+        
+        if (temp == 0) then
+            temp = exposcall("Write", -2, "File Created");
+        else
+            temp = exposcall("Write", -2, "Error Creation");
+        endif;
+        temp = exposcall("Read", -1, command);
+        if(command == "Shutdown") then
+            temp = exposcall("Shutdown");
+        endif;
+        return 0;
+    end
+}
